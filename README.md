@@ -200,9 +200,9 @@ The application uses JWT tokens for authentication. When a user logs in, a JWT t
 
 ## 👨‍💻 Author
 
-- Your Name - [GitHub Profile](https://github.com/YOUR_GITHUB_USERNAME)
+-Sai Charan -https://github.com/charan22640/blog-editor-web-application 
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the (LICENSE) file for details.
 
