@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 
 export default function ProtectedLayout({
@@ -36,12 +37,12 @@ export default function ProtectedLayout({
               © {new Date().getFullYear()} Blog Editor. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
-              <a href="#" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+              <Link href="/privacy-policy" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                 Privacy Policy
-              </a>
-              <a href="#" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+              </Link>
+              <Link href="/terms-of-service" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
                 Terms of Service
-              </a>
+              </Link>
             </div>
           </div>
         </div>
