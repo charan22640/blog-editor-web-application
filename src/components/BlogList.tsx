@@ -30,23 +30,19 @@ const BlogList: FC<BlogListProps> = ({ blogs, onDelete }) => {
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-
   const handleDelete = async (id: string) => {
     if (!onDelete) return;
     
-    // Optimistic update
-    toast.promise(
-      async () => {
-        setIsDeleting(id);
-        await onDelete(id);
-        setIsDeleting(null);
-      },
-      {
-        loading: 'Deleting blog post...',
-        success: 'Blog post deleted successfully',
-        error: 'Failed to delete blog post'
-      }
-    );
+    setIsDeleting(id);
+    try {
+      await onDelete(id);
+      toast.success('Blog post deleted successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete blog post';
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(null);
+    }
   };
 
   // Memoize the filtered and sorted blogs

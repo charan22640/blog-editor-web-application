@@ -111,20 +111,23 @@ export async function DELETE(
         error: 'Database connection failed',
         details: dbError instanceof Error ? dbError.message : String(dbError)
       }, { status: 503 });
-    }
-
-    // Find and delete the blog post
-    const result = await Blog.findOneAndDelete({
+    }    // First check if the blog exists and belongs to the user
+    const blog = await Blog.findOne({
       _id: params.id,
-      userId: user.id // Ensure user only deletes their own blogs
+      userId: user.id
     });
 
-    // If no blog was found or deleted
-    if (!result) {
+    if (!blog) {
       return NextResponse.json({ 
         error: 'Blog not found or you do not have permission to delete it' 
       }, { status: 404 });
     }
+
+    // If blog exists and belongs to user, delete it
+    await Blog.findOneAndDelete({
+      _id: params.id,
+      userId: user.id
+    });
 
     // Invalidate cache after delete
     deleteCachedData(`blogs-${user.id}`);

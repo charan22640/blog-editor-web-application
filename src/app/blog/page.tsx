@@ -44,25 +44,27 @@ export default function BlogsPage() {
       </div>
     );
   }
-
-  // Handle blog deletion
   const handleDelete = async (id: string) => {
     try {
       setIsDeleting(true);
       const response = await fetch(`/api/blogs/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`Failed to delete blog: ${response.statusText}`);
+        throw new Error(data.error || `Failed to delete blog: ${response.statusText}`);
       }
 
       // Update the blogs list by removing the deleted blog
       setBlogs(blogs.filter((blog: any) => blog._id !== id));
-      toast.success('Blog deleted successfully');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete blog');
+      throw error; // Propagate error to be handled by BlogList component
     } finally {
       setIsDeleting(false);
     }

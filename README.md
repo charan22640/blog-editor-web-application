@@ -1,3 +1,4 @@
+
 # 📝 Blog Editor - Modern Full Stack Blog Platform
 
 A modern, feature-rich blog editor application built with Next.js 14, TypeScript, and MongoDB. Create, edit, and manage your blog posts with a beautiful UI and powerful features.
@@ -7,7 +8,8 @@ A modern, feature-rich blog editor application built with Next.js 14, TypeScript
 [![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-![Blog Editor Banner](https://user-images.githubusercontent.com/YOUR_GITHUB_USERNAME/blog-editor-web-application/main/public/blog-editor-banner.png)
+
+
 
 ## 📌 Overview
 
@@ -233,13 +235,11 @@ graph TD
 ## 📱 Demo
 
 - **Home Screen**:
-  ![Home Screen](https://user-images.githubusercontent.com/YOUR_GITHUB_USERNAME/blog-editor-web-application/main/public/screenshots/home.png)
-
+  ![Home Screen](https://github.com/user-attachments/assets/e15ad728-603c-404f-baaa-cfaf6b7148c9)
 - **Blog Editor**:
-  ![Blog Editor](https://user-images.githubusercontent.com/YOUR_GITHUB_USERNAME/blog-editor-web-application/main/public/screenshots/editor.png)
-
+  ![Blog Editor](https://github.com/user-attachments/assets/a83cc928-5b95-47f8-80e5-811f5797d34a)
 - **Blog List**:
-  ![Blog List](https://user-images.githubusercontent.com/YOUR_GITHUB_USERNAME/blog-editor-web-application/main/public/screenshots/list.png)
+  ![Blog List](https://github.com/user-attachments/assets/cdc01645-cb9a-4131-9f24-2dced6db1cbc)
 
 ## 🧪 Implementation Details
 
@@ -411,4 +411,3 @@ Built by Sai Charan
 - [Vercel](https://vercel.com)
 - [MongoDB](https://mongodb.com)
 - All our contributors
-
