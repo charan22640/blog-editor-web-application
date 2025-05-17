@@ -6,24 +6,19 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Menu, X, Home, BookOpen, PlusCircle, LogOut, User, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
 
 export default function Navigation() {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const { theme, setTheme } = useTheme();
   const [username, setUsername] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   
   // Initialize component on client side
   useEffect(() => {
     setMounted(true);
-    // Check system preference for theme
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
-    }
-    
     // Try to get username from localStorage if available
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -35,16 +30,8 @@ export default function Navigation() {
       }
     }
   }, []);
-  
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
   
   // Handle mobile menu
@@ -84,13 +71,13 @@ export default function Navigation() {
   if (!mounted) return null;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-950/95 dark:supports-[backdrop-filter]:bg-gray-950/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:bg-gray-950/90 dark:supports-[backdrop-filter]:bg-gray-950/80">
       <nav className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo and site name */}
           <Link href="/" className="flex items-center gap-2">
-            <span className="bg-primary text-white font-bold rounded-lg w-8 h-8 flex items-center justify-center">B</span>
-            <span className="font-bold text-xl hidden sm:inline-block">Blog Editor</span>
+            <span className="bg-primary text-white font-medium rounded-md w-8 h-8 flex items-center justify-center shadow-sm">B</span>
+            <span className="font-semibold text-xl hidden sm:inline-block">Blog Editor</span>
           </Link>
 
           {/* Desktop Navigation */}

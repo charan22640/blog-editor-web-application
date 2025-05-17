@@ -22,7 +22,8 @@ export async function connectToDb() {
       try {
         await cached.conn.close();
       } catch (e) {
-        console.warn('Error closing stale connection:', e);
+        console.error('Error closing stale connection:', e);
+        // Reset connection state even if close fails
       }
       cached.conn = null;
       cached.promise = null;
@@ -44,10 +45,20 @@ export async function connectToDb() {
       cached.promise = mongoose.connect(MONGODB_URI!, opts)
         .then((mongoose) => {
           console.log('MongoDB connected successfully');
+          mongoose.connection.on('error', (error) => {
+            console.error('MongoDB runtime error:', error);
+          });
+          mongoose.connection.on('disconnected', () => {
+            console.warn('MongoDB disconnected. Attempting to reconnect...');
+            cached.conn = null;
+            cached.promise = null;
+          });
           return mongoose;
         })
         .catch((error) => {
           console.error('MongoDB connection error details:', error);
+          cached.conn = null;
+          cached.promise = null;
           cached.promise = null;
           throw error;
         });

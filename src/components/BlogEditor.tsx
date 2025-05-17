@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, Control, ControllerRenderProps } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PencilIcon, Save, Send, Clock, AlertCircle, Wifi, WifiOff } from 'lucide-react';
@@ -26,7 +26,7 @@ const ReactQuill = dynamic(() => import('react-quill').then(mod => {
   return mod;
 }), { 
   ssr: false,
-  loading: () => <div className="h-[350px] w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 animate-pulse rounded-md">
+  loading: () => <div className="h-[350px] w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-md">
     <p className="text-gray-500">Loading editor...</p>
   </div>
 });
@@ -49,8 +49,18 @@ interface BlogEditorProps {
     tags: string;
     status: 'draft' | 'published';
   };
-  onSave: (data: any) => Promise<any>;
+  onSave: (data: BlogFormValues) => Promise<any>;
 }
+
+type BlogFormField = {
+  name: keyof BlogFormValues;
+  control: Control<BlogFormValues>;
+  field: ControllerRenderProps<BlogFormValues>;
+};
+
+const FormInput = ({ field, ...props }: BlogFormField & React.InputHTMLAttributes<HTMLInputElement>) => (
+  <Input {...field} {...props} />
+);
 
 const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
   const router = useRouter();
@@ -266,6 +276,7 @@ const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
           <span className="text-sm">{errorMessage}</span>
         </div>
       )}
+
       <div className={`flex ${isMobile ? 'flex-col' : 'flex-row items-center justify-between'} mb-4`}>
         <div className="flex items-center gap-2">
           <PencilIcon className="h-5 w-5 text-primary" />
@@ -284,6 +295,7 @@ const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
           </div>
+          
           <div className="flex items-center mr-3">
             {isOnline ? (
               <div className="flex items-center text-green-600 dark:text-green-400">
@@ -307,8 +319,8 @@ const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
           {saving && <span className="text-xs text-amber-600 animate-pulse ml-2">Saving...</span>}
         </div>
       </div>
-      
-      <div className="space-y-4">
+
+      <div className="space-y-4 relative">
         <div className="space-y-2">
           <Label htmlFor="title" className="text-base font-semibold">Blog Title <span className="text-red-500">*</span></Label>
           <Controller
@@ -330,29 +342,31 @@ const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
 
         <div className="space-y-2">
           <Label htmlFor="content" className="text-base font-semibold">Content <span className="text-red-500">*</span></Label>
-          <div className="min-h-[400px] border rounded-md overflow-hidden">
-            <Controller
-              name="content"
-              control={control}
-              render={({ field }) => (
-                <ReactQuill
-                  theme="snow"
-                  value={field.value}
-                  onChange={field.onChange}
-                  className="h-[350px]"
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      [{ 'color': [] }, { 'background': [] }],
-                      ['link', 'image'],
-                      ['clean']
-                    ],
-                  }}
-                />
-              )}
-            />
+          <div className="min-h-[400px] border rounded-md overflow-hidden relative shimmer-bg">
+            <div className="relative z-10">
+              <Controller
+                name="content"
+                control={control}
+                render={({ field }) => (
+                  <ReactQuill
+                    theme="snow"
+                    value={field.value}
+                    onChange={field.onChange}
+                    className="h-[350px] bg-white/80 dark:bg-gray-950/80"
+                    modules={{
+                      toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['link', 'image'],
+                        ['clean']
+                      ],
+                    }}
+                  />
+                )}
+              />
+            </div>
           </div>
           {errors.content && (
             <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>

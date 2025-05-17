@@ -85,7 +85,7 @@ const BlogList: FC<BlogListProps> = ({ blogs, onDelete }) => {
     <div className="space-y-6">
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-center pb-6 border-b">
-        <h2 className="text-2xl font-bold">Your Blog Posts</h2>
+        <h2 className="text-2xl font-semibold">Your Blog Posts</h2>
       </div>
 
       {/* Filters and Search */}

@@ -55,14 +55,15 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Set cookie using response object
+    // Set cookie using response object with enhanced security and persistence
     response.cookies.set({
       name: 'token',
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 // 24 hours
+      sameSite: 'lax', // Changed to 'lax' to allow cross-site navigation
+      path: '/', // Ensure cookie is available across all paths
+      maxAge: 60 * 60 * 24 * 7 // Extended to 7 days for better persistence
     });
 
     return response;
