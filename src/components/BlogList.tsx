@@ -1,15 +1,17 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { PencilIcon, TrashIcon, EyeIcon, CalendarIcon, TagIcon, FilterIcon, PlusIcon } from 'lucide-react';
-import { toast } from 'sonner';
+import { PencilIcon, TrashIcon, EyeIcon, CalendarIcon, TagIcon, FilterIcon, PlusIcon, SearchIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { staggerContainer, cardTransition } from '@/lib/animations';
+import { toast } from 'sonner';
 
 interface Blog {
   _id: string;
   title: string;
   content?: string;
-  tags?: string;
+  tags?: string | string[];
   status: 'draft' | 'published';
   createdAt: string;
   updatedAt: string;
@@ -26,160 +28,200 @@ type FilterOption = 'all' | 'published' | 'draft';
 const BlogList: FC<BlogListProps> = ({ blogs, onDelete }) => {
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
     if (!onDelete) return;
     
-    try {
-      setIsDeleting(id);
-      await onDelete(id);
-      toast.success('Blog deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete blog');
-    } finally {
-      setIsDeleting(null);
-    }
+    // Optimistic update
+    toast.promise(
+      async () => {
+        setIsDeleting(id);
+        await onDelete(id);
+        setIsDeleting(null);
+      },
+      {
+        loading: 'Deleting blog post...',
+        success: 'Blog post deleted successfully',
+        error: 'Failed to delete blog post'
+      }
+    );
   };
 
-  // Sort and filter blogs
-  const sortedAndFilteredBlogs = [...blogs]
-    .filter(blog => {
-      if (filterBy === 'all') return true;
-      return blog.status === filterBy;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'newest') {
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-      } else if (sortBy === 'oldest') {
-        return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-      } else { // title
-        return a.title.localeCompare(b.title);
-      }
-    });
+  // Memoize the filtered and sorted blogs
+  const filteredAndSortedBlogs = useMemo(() => {
+    return [...blogs]
+      .filter(blog => {
+        const matchesFilter = filterBy === 'all' || blog.status === filterBy;
+        const searchLower = searchQuery.toLowerCase();
+        const matchesSearch = searchQuery === '' || 
+          blog.title.toLowerCase().includes(searchLower) ||
+          (blog.tags && (
+            Array.isArray(blog.tags)
+              ? blog.tags.some(tag => tag.toLowerCase().includes(searchLower))
+              : blog.tags.toLowerCase().includes(searchLower)
+          ));
+        return matchesFilter && matchesSearch;
+      })
+      .sort((a, b) => {
+        const aTime = sortBy !== 'title' ? new Date(a.createdAt).getTime() : 0;
+        const bTime = sortBy !== 'title' ? new Date(b.createdAt).getTime() : 0;
+        
+        switch (sortBy) {
+          case 'newest':
+            return bTime - aTime;
+          case 'oldest':
+            return aTime - bTime;
+          case 'title':
+            return a.title.localeCompare(b.title);
+          default:
+            return 0;
+        }
+      });
+  }, [blogs, filterBy, searchQuery, sortBy]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h2 className="text-2xl font-bold">Your Blogs</h2>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-md">
-            <Button 
-              variant={filterBy === 'all' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterBy('all')}
-              className="text-xs h-8 px-2"
-            >
-              All
-            </Button>
-            <Button 
-              variant={filterBy === 'published' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterBy('published')}
-              className="text-xs h-8 px-2"
-            >
-              Published
-            </Button>
-            <Button 
-              variant={filterBy === 'draft' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterBy('draft')}
-              className="text-xs h-8 px-2"
-            >
-              Drafts
-            </Button>
-          </div>
-
-          <select 
-            className="bg-white dark:bg-gray-950 rounded-md border px-2 py-1 text-sm"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="title">By title</option>
-          </select>
-
-          <Link href="/blog/new">
-            <Button size="sm" className="flex items-center gap-1">
-              <PlusIcon className="h-4 w-4" /> New Blog
-            </Button>
-          </Link>
-        </div>
+      {/* Header and Controls */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center pb-6 border-b">
+        <h2 className="text-2xl font-bold">Your Blog Posts</h2>
       </div>
 
-      {sortedAndFilteredBlogs.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg border-2 border-dashed">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">No blogs found</p>
+      {/* Filters and Search */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="relative">
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search blogs..."
+            aria-label="Search blogs"
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 dark:bg-gray-800"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+          <select
+          value={filterBy}
+          onChange={(e) => setFilterBy(e.target.value as FilterOption)}
+          aria-label="Filter blog posts"
+          className="rounded-lg border border-gray-200 dark:border-gray-700 py-2 px-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+        >
+          <option value="all">All Posts</option>
+          <option value="published">Published</option>
+          <option value="draft">Drafts</option>
+        </select>
+        
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+          aria-label="Sort blog posts"
+          className="rounded-lg border border-gray-200 dark:border-gray-700 py-2 px-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="title">Title A-Z</option>
+        </select>
+      </div>
+
+      {/* Blog Grid */}      <motion.div 
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6"
+      >
+        {filteredAndSortedBlogs.map((blog) => (
+          <motion.div
+            key={blog._id}
+            variants={cardTransition}
+            className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-gray-200 dark:border-gray-700"
+          >
+            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Link href={`/blog/edit/${blog._id}`}>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Edit blog post">
+                  <PencilIcon className="w-4 h-4" />
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="ghost"
+                className={`h-8 w-8 p-0 ${
+                  isDeleting === blog._id
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                }`}
+                onClick={() => handleDelete(blog._id)}
+                disabled={isDeleting === blog._id}
+                aria-label="Delete blog post"
+              >
+                {isDeleting === blog._id ? (
+                  <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <TrashIcon className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  ${blog.status === 'published' 
+                    ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' 
+                    : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                  }`}
+                >
+                  {blog.status === 'published' ? 'Published' : 'Draft'}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {format(new Date(blog.updatedAt), 'MMM d, yyyy')}
+                </span>
+              </div>
+
+              <Link href={`/blog/edit/${blog._id}`} className="block">
+                <h3 className="text-xl font-semibold mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {blog.title}
+                </h3>
+              </Link>              {blog.content && (
+                <p className="text-gray-600 dark:text-gray-300 line-clamp-3 mb-4">
+                  {blog.content.replace(/<[^>]*>/g, '')}
+                </p>
+              )}
+              
+              {blog.tags && (
+                <div className="flex flex-wrap gap-2">
+                  {(Array.isArray(blog.tags) ? blog.tags : blog.tags.split(','))
+                    .map((tag, index) => (
+                      <span 
+                        key={index}                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/40 transition-colors"
+                      >
+                        <TagIcon className="w-3 h-3 mr-1" />
+                        {tag.trim()}
+                      </span>
+                    ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* Empty State */}
+      {filteredAndSortedBlogs.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+            <PencilIcon className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">No blog posts found</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            {searchQuery 
+              ? "No posts match your search criteria" 
+              : "Start writing your first blog post"}
+          </p>
           <Link href="/blog/new">
             <Button>
-              Create Your First Blog
+              Create New Post
             </Button>
           </Link>
-        </div>
-      ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {sortedAndFilteredBlogs.map((blog) => (
-            <div
-              key={blog._id}
-              className="flex flex-col h-full bg-white dark:bg-gray-950 border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex-1 p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${blog.status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'}`}>
-                    {blog.status === 'published' ? 'Published' : 'Draft'}
-                  </span>
-                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                    <CalendarIcon className="h-3 w-3 mr-1" />
-                    {format(new Date(blog.updatedAt), 'MMM d, yyyy')}
-                  </div>
-                </div>
-                
-                <h3 className="font-semibold text-lg mb-2 line-clamp-2">{blog.title}</h3>
-                
-                {blog.tags && typeof blog.tags === 'string' && blog.tags.trim() !== '' && (
-                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-3">
-                    <TagIcon className="h-3 w-3 mr-1" />
-                    <div className="flex flex-wrap gap-1">
-                      {blog.tags.split(',').map((tag, index) => (
-                        <span key={index} className="bg-gray-100 dark:bg-gray-800 rounded-full px-2 py-0.5">
-                          {tag.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex border-t divide-x">
-                <Link href={`/blog/edit/${blog._id}`} className="flex-1">
-                  <Button variant="ghost" className="w-full rounded-none flex items-center justify-center py-3 h-auto">
-                    <PencilIcon className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                </Link>
-                {onDelete && (
-                  <Button 
-                    variant="ghost" 
-                    className="flex-1 rounded-none flex items-center justify-center py-3 h-auto text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                    onClick={() => handleDelete(blog._id)}
-                    disabled={isDeleting === blog._id}
-                  >
-                    <TrashIcon className="h-4 w-4 mr-1" />
-                    {isDeleting === blog._id ? 'Deleting...' : 'Delete'}
-                  </Button>
-                )}
-                {blog.status === 'published' && (
-                  <Link href={`/blog/view/${blog._id}`} className="flex-1">
-                    <Button variant="ghost" className="w-full rounded-none flex items-center justify-center py-3 h-auto">
-                      <EyeIcon className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </div>
-          ))}
         </div>
       )}
     </div>

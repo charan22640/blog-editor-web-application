@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 export default function BlogsPage() {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchBlogs = async () => {
@@ -44,6 +45,29 @@ export default function BlogsPage() {
     );
   }
 
+  // Handle blog deletion
+  const handleDelete = async (id: string) => {
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`/api/blogs/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete blog: ${response.statusText}`);
+      }
+
+      // Update the blogs list by removing the deleted blog
+      setBlogs(blogs.filter((blog: any) => blog._id !== id));
+      toast.success('Blog deleted successfully');
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete blog');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="container max-w-4xl py-8">
       <div className="flex justify-between items-center mb-8">
@@ -52,7 +76,7 @@ export default function BlogsPage() {
           <Button>Create New Blog</Button>
         </Link>
       </div>
-      <BlogList blogs={blogs} />
+      <BlogList blogs={blogs} onDelete={handleDelete} />
     </div>
   );
 }
