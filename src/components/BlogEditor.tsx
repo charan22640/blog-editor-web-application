@@ -60,6 +60,8 @@ const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
   const [isPublishing, setIsPublishing] = useState(false);
   const changesSinceLastSave = useRef(false);
   const currentStatus = useRef<'draft' | 'published'>(initialData?.status || 'draft');
+  const lastContent = useRef<string>(initialData?.content || '');
+  const lastTitle = useRef<string>(initialData?.title || '');
 
   // Mobile detection
   useEffect(() => {
@@ -71,7 +73,7 @@ const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
     }
   }, []);
 
-  const { control, handleSubmit, watch, formState: { errors, isDirty, isValid } } = useForm<BlogFormValues>({
+  const { control, handleSubmit, watch, setValue, formState: { errors, isDirty, isValid } } = useForm<BlogFormValues>({
     resolver: zodResolver(blogSchema),
     defaultValues: {
       title: initialData?.title || '',
@@ -84,7 +86,7 @@ const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
 
   const watchedValues = watch();
 
-  // Online/Offline status
+  // Online/Offline status and sync
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
@@ -109,20 +111,28 @@ const BlogEditor: FC<BlogEditorProps> = ({ initialData, onSave }) => {
 
   // Auto-save functionality
   useEffect(() => {
-    // Don't auto-save if disabled, no changes, publishing, or already published
-    if (!autoSaveEnabled || !isDirty || isPublishing || currentStatus.current === 'published') return;
+    const hasContentChanged = watchedValues.content !== lastContent.current;
+    const hasTitleChanged = watchedValues.title !== lastTitle.current;
+
+    // Don't auto-save if disabled or no changes
+    if (!autoSaveEnabled || (!hasContentChanged && !hasTitleChanged)) return;
+
+    // Don't auto-save if publishing or already published
+    if (isPublishing || currentStatus.current === 'published') return;
 
     changesSinceLastSave.current = true;
     setErrorMessage(null);
 
     const timer = setTimeout(() => {
       if (changesSinceLastSave.current && watchedValues.title && watchedValues.content) {
+        lastContent.current = watchedValues.content;
+        lastTitle.current = watchedValues.title;
         handleAutoSave();
       }
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [watchedValues, isDirty, isPublishing, autoSaveEnabled]);
+  }, [watchedValues.content, watchedValues.title, isPublishing, autoSaveEnabled]);
 
   const saveToLocalStorage = (data: BlogFormValues) => {
     try {
